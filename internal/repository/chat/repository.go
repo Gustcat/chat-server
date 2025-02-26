@@ -3,9 +3,9 @@ package chat
 import (
 	"context"
 	"fmt"
+	db "github.com/Gustcat/chat-server/internal/client"
 	"github.com/Gustcat/chat-server/internal/repository"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,10 +23,10 @@ const (
 )
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
-func NewChatRepository(db *pgxpool.Pool) repository.ChatRepository {
+func NewChatRepository(db db.Client) repository.ChatRepository {
 	return &repo{db: db}
 }
 
@@ -38,8 +38,13 @@ func (r *repo) Create(ctx context.Context, usernames []string) (int64, error) {
 		return 0, status.Errorf(codes.InvalidArgument, "failed to build query: %v", err)
 	}
 
+	q := db.Query{
+		Name:     "chat_repositoty.Create",
+		QueryRaw: query,
+	}
+
 	var chatID int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&chatID)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&chatID)
 	if err != nil {
 		return 0, status.Errorf(codes.InvalidArgument, "failed to insert chat: %v", err)
 	}
@@ -55,7 +60,12 @@ func (r *repo) Create(ctx context.Context, usernames []string) (int64, error) {
 			return 0, status.Errorf(codes.InvalidArgument, "failed to build query: %v", err)
 		}
 
-		_, err = r.db.Exec(ctx, query, args...)
+		q = db.Query{
+			Name:     "chat_repositoty.LinkUsers",
+			QueryRaw: query,
+		}
+
+		_, err = r.db.DB().ExecContext(ctx, q, args...)
 		if err != nil {
 			return 0, status.Errorf(codes.InvalidArgument, "failed to insert username %s: %v", username, err)
 		}
@@ -71,7 +81,12 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 
 	query, args, err := builder.ToSql()
 
-	ct, err := r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "chat_repositoty.Delete",
+		QueryRaw: query,
+	}
+
+	ct, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "не удалось выполнить SQL-запрос: %v", err)
 	}

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	repomodel "github.com/Gustcat/chat-server/internal/repository/message/model"
+	"github.com/Gustcat/chat-server/internal/model"
 )
 
 type ChatRepository interface {
@@ -11,5 +11,5 @@ type ChatRepository interface {
 }
 
 type MessageRepository interface {
-	SendMessage(ctx context.Context, message *repomodel.Message) error
+	SendMessage(ctx context.Context, message *model.Message) error
 }

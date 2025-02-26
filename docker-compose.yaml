@@ -30,3 +30,12 @@ services:
       - "50055:50055"
     depends_on:
       - pg
+    networks:
+      - auth_default
+      - chat-server_default
+
+networks:
+  auth_default:
+    external: true
+  chat-server_default:
+    external: true

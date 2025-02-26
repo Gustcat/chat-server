@@ -2,10 +2,10 @@ package message
 
 import (
 	"context"
+	db "github.com/Gustcat/chat-server/internal/client"
+	"github.com/Gustcat/chat-server/internal/model"
 	"github.com/Gustcat/chat-server/internal/repository"
-	repomodel "github.com/Gustcat/chat-server/internal/repository/message/model"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,14 +21,14 @@ const (
 )
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
-func NewMessageRepository(db *pgxpool.Pool) repository.MessageRepository {
+func NewMessageRepository(db db.Client) repository.MessageRepository {
 	return &repo{db: db}
 }
 
-func (r *repo) SendMessage(ctx context.Context, message *repomodel.Message) error {
+func (r *repo) SendMessage(ctx context.Context, message *model.Message) error {
 	builder := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(usernameColumn, textColumn, chatIdColumn, createdAtColumn).
@@ -36,7 +36,12 @@ func (r *repo) SendMessage(ctx context.Context, message *repomodel.Message) erro
 
 	query, args, err := builder.ToSql()
 
-	_, err = r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "message_repositoty.SendMeassage",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "не удалось выполнить SQL-запрос: %v", err)
 	}

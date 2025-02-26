@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/Gustcat/chat-server/interceptor"
 	"github.com/Gustcat/chat-server/internal/closer"
 	"github.com/Gustcat/chat-server/internal/config"
 	desc "github.com/Gustcat/chat-server/pkg/chat_v1"
@@ -54,7 +55,6 @@ func (app *App) Run() error {
 
 func (app *App) initConfig(_ context.Context) error {
 	err := config.Load(".env")
-	log.Println("env-fail are used")
 	if err != nil {
 		return err
 	}
@@ -67,12 +67,13 @@ func (app *App) initServiceProvider(_ context.Context) error {
 }
 
 func (app *App) initGRPCServer(ctx context.Context) error {
-	app.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	app.grpcServer = grpc.NewServer(
+		grpc.Creds(insecure.NewCredentials()),
+		grpc.UnaryInterceptor(interceptor.AuthInterceptor))
 
 	reflection.Register(app.grpcServer)
 
 	desc.RegisterChatV1Server(app.grpcServer, app.serviceProvider.Impl(ctx))
-	log.Printf("<serviceProvider> - %+v", app.serviceProvider)
 
 	return nil
 }
