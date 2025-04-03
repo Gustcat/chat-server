@@ -17,12 +17,18 @@ const (
 	address = "localhost:50055"
 )
 
+// Работает только при отключении проверки авторизации
 func main() {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to server: %v", err)
 	}
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("failed to close to server: %v", err)
+		}
+	}(conn)
 
 	ctx := context.Background()
 	client := desc.NewChatV1Client(conn)
@@ -85,27 +91,6 @@ func connectChat(ctx context.Context, client desc.ChatV1Client, chatID int64, us
 	}()
 
 	for {
-		// Ниже пример того, как можно считывать сообщения из консоли
-		// в демонстрационных целях будем засылать в чат рандомный текст раз в 5 секунд
-		//scanner := bufio.NewScanner(os.Stdin)
-		//var lines strings.Builder
-		//
-		//for {
-		//	scanner.Scan()
-		//	line := scanner.Text()
-		//	if len(line) == 0 {
-		//		break
-		//	}
-		//
-		//	lines.WriteString(line)
-		//	lines.WriteString("\n")
-		//}
-		//
-		//err = scanner.Err()
-		//if err != nil {
-		//	log.Println("failed to scan message: ", err)
-		//}
-
 		time.Sleep(period)
 
 		text := gofakeit.Word()
