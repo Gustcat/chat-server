@@ -11,5 +11,7 @@ func (i *Implementation) Create(ctx context.Context, req *desc.CreateRequest) (*
 		return nil, err
 	}
 
+	i.channels[id] = make(chan *desc.Message, 100)
+
 	return &desc.CreateResponse{Id: id}, nil
 }
